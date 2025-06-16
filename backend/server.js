@@ -2,6 +2,10 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import axios from 'axios';
+
+import { fetchWeatherApi } from 'openmeteo'; //API - Velocidade Vento
+
 
 dotenv.config();
 
@@ -54,6 +58,38 @@ app.get('/dados', async (req, res) => {
     console.error("Backend: Erro ao buscar dados na rota /dados:", err);
     res.status(500).json({ error: 'Erro interno ao buscar dados do dashboard.' });
   }
+});
+
+// Rota para obter dados sobre Velocidade do Vento (Ainda Estáticos - Baseados no MapComponent)
+app.get('/weather', async (req, res) => { //  Consultar dinamicamente Com /:lat/:lon
+    const { lat, lon } = req.params;
+
+    try {
+        const params = {
+            latitude: -1.4772889522549837, //parseFloat(lat),
+            longitude: -48.45399135672737, //parseFloat(lon),
+            hourly: ["temperature_2m","windspeed_10m"],
+            timezone: 'auto'
+        };
+
+        const response = await axios.get(api_weather_url, { params }); //Realizo a conexão com a Api usando AXIOS
+        const data = response.data;
+        console.log(`${new Date().toISOString()}: [SUCESSO] Conectado a API - WindSpeed`); //Log de Sucesso de Conexão
+
+        const time = data?.hourly?.time || []; //Timestamp da Consulta
+        const temperature = data?.hourly?.temperature_2m || []; // Temperatura Local
+        const windspeed = data?.hourly?.windspeed_10m || [];    // Velocidade do vento Local
+
+        const forecast = time.map((t, i) => ({
+            time: t,
+            temperature: temperature[i],
+            windspeed: windspeed[i]
+        }));
+
+        res.json(forecast);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(PORT, () => {
