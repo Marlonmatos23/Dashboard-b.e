@@ -10,6 +10,10 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import './App.css';
 
+
+//Teste Consumo Api
+import WindSpeedChart from './components/charts/WindSpeedChart'
+
 const AppContent = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +74,7 @@ const AppContent = () => {
           <Route path="/" element={<DashboardPage history={history} latestData={latestData} selectedChart={selectedChart} loading={loading && history.length === 0} error={error} />} />
           <Route path="/historico" element={<HistoricalPage history={history} />} />
           <Route path="/configuracao" element={<ConfigPage />} />
+          <Route path="/testeWspeed" element={<WindSpeedChart />} /> 
         </Routes>
       </main>
     </div>
