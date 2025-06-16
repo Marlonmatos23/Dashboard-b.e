@@ -1,6 +1,6 @@
 import React from "react";
 import ChartComponent from '../ChartComponent';
-import useWeatherHistory from "../../services/WindSpeedService";
+import useWeatherHistory from "../../services/WindSpeedServices";
 
 function WindSpeedChart() {
   const { history, loading, error } = useWeatherHistory();

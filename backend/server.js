@@ -16,6 +16,10 @@ const PORT = process.env.PORT || 5050;
 const uri = process.env.MONGO_URI;
 const collectionName = process.env.COLLECTION_NAME;
 
+//Conexão API - Open Meteo : Obter Velocidade do Vento
+const api_weather_url = "https://api.open-meteo.com/v1/forecast";
+
+
 // Validação de variáveis de ambiente
 if (!uri || !collectionName) {
   console.error("Erro: Variáveis de ambiente MONGO_URI e COLLECTION_NAME são obrigatórias.");
