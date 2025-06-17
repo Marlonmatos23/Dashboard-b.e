@@ -8,6 +8,8 @@ import Compass from './Compass';
 import MapComponent from './MapComponent';
 import AutonomiaChart from './AutonomiaChart'; 
 import CapacidadeRestanteChart from './CapacidadeRestanteChart'; 
+import WindSpeedChart from './chart/WindSpeedChart';
+
 
 const AllCharts = ({ history, latestData, loading }) => {
   const PONTOS_HISTORICO_MINI = 15;
@@ -29,6 +31,7 @@ const AllCharts = ({ history, latestData, loading }) => {
     { id: 'motorSpeed', Comp: SpeedChart, props: { currentValue: latestData?.Motor_Speed_RPM, historyData: miniSlicedHistory.map(h => h?.Motor_Speed_RPM ?? 0), title: 'Motor (RPM)', loading } },
     { id: 'waves', Comp: WavesChart, props: { currentValue: latestData?.Current, historyData: miniSlicedHistory.map(h => h?.Current ?? 0), loading } },
     { id: 'compass', Comp: Compass, props: { heading: latestData?.Heading ?? 0, loading } },
+    { id: 'windSpeed', Comp: WindSpeedChart, props: {} }
   ];
 
   return (
