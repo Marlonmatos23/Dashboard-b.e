@@ -9,10 +9,10 @@ const Sidebar = ({ selectedChart, onSelectChart }) => {
     { id: 'all', label: 'Todos os Gráficos' }, { id: 'battery', label: 'Status da Bateria' },
     { id: 'speed', label: 'Velocidade (KPH)' }, { id: 'motorSpeed', label: 'Motor (RPM)' },
     { id: 'motorTemp', label: 'Temp. do Motor' }, { id: 'controlTemp', label: 'Temp. do Controle' },
-    { id: 'waves', label: 'Corrente' }, { id: 'autonomia', label: 'Autonomia' }, { id: 'capacidade', label: 'Capacidade Restante' },
+    { id: 'waves', label: 'Corrente' }, { id: 'autonomia', label: 'Autonomia' },
+    { id: 'capacidade', label: 'Capacidade Restante' }, { id: 'windSpeed', label: 'Velocidade do Vento' },
     { id: 'navigation', label: 'Navegação' },
   ];
-
   return (
     <aside className="menu-container">
       <UserMenu />

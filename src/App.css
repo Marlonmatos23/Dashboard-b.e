@@ -6,8 +6,6 @@
   --accent-primary: #00A79D;
   --accent-secondary: #3498db;
   --border-color: #3A3A3C;
-  --placeholder-bg: #2a3f52;
-  --text-placeholder: #6a7f92;
 }
 
 body {
@@ -18,6 +16,9 @@ body {
   overflow: hidden;
 }
 
+/* ===================================================================
+   LAYOUT PRINCIPAL DA APLICAÇÃO
+   =================================================================== */
 .app-container {
   display: grid;
   grid-template-columns: 250px 1fr;
@@ -34,6 +35,7 @@ body {
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 24px;
 }
 
@@ -56,9 +58,10 @@ body {
   cursor: pointer;
   font-size: 15px;
   transition: all 0.2s ease;
-  width: 80%;
+  width: 100%;
   text-align: left;
   border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .menu-button-base:hover {
@@ -73,50 +76,120 @@ body {
   font-weight: 500;
 }
 
+/* --- Layout da Área de Conteúdo Principal --- */
 .content {
   grid-area: content;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  overflow: hidden;
+  gap: 0;
+  padding: 0;
+}
+
+.main-view-wrapper {
+  flex-grow: 1;
   overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
   gap: 24px;
 }
 
-/* --- Layout para a VISTA DE GRÁFICO ÚNICO --- */
-.map-view-container {
-  flex: 1 1 50%;
-  min-height: 0;
-  border: 1px solid var(--border-color);
+/* --- Layout do Rodapé --- */
+.footer-container {
+  flex-shrink: 0;
+  width: 100%;
   background-color: var(--bg-panel);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-}
-.chart-view-container {
-  flex: 1 1 50%;
-  min-height: 0;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-panel);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  padding: 16px 0;
 }
 
-.content-placeholder {
-  width: 100%;
-  height: 100%;
-  flex-grow: 1;
+.footer-content {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  flex-wrap: wrap;
+}
+
+.footer-title {
+  font-size: 0.9rem;
   color: var(--text-secondary);
-  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.footer-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.footer-logo-img {
+  max-height: 35px;
+  max-width: 110px;
+  object-fit: contain;
+  filter: grayscale(100%) brightness(3) contrast(1.2);
+  opacity: 0.7;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.footer-logo-img:hover {
+  opacity: 1;
+  filter: grayscale(0%) brightness(1);
+}
+
+/* ===================================================================
+   LAYOUTS DE PÁGINA ESPECÍFICOS
+   =================================================================== */
+
+/* --- Estilos base para os contentores de mapa e gráfico --- */
+.map-container, .grafico-container {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-panel);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Layout para a VISTA DE GRÁFICO ÚNICO --- */
+.chart-view-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+}
+.chart-view-wrapper .map-container {
+  flex: 1 1 50%;
+  min-height: 0;
+}
+.chart-view-wrapper .grafico-container {
+  flex: 1 1 50%;
+  padding: 20px;
+  min-height: 0;
 }
 
 /* --- Layout para a VISTA "TODOS OS GRÁFICOS" --- */
+.all-charts-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+}
+.all-charts-wrapper .map-container {
+  flex-shrink: 0; /* Impede que o mapa encolha */
+  height: 40vh; /* Altura fixa para o mapa */
+}
+.all-charts-wrapper .grafico-container {
+  flex-grow: 1; /* Grelha ocupa o espaço restante */
+  padding: 0;
+  min-height: 0;
+}
 .all-charts-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -124,8 +197,6 @@ body {
   width: 100%;
   height: 100%;
 }
-
-/* Esta regra aplica-se a CADA ITEM na grelha, incluindo o mapa */
 .all-charts-container .grid-item {
   background-color: var(--bg-panel);
   border: 1px solid var(--border-color);
@@ -133,53 +204,11 @@ body {
   padding: 15px;
   display: flex;
   flex-direction: column;
-  aspect-ratio: 1 / 1; /* Força a proporção quadrada */
+  aspect-ratio: 1 / 1;
   min-height: 250px;
   overflow: hidden;
 }
 
-.user-menu {
-  padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  text-align: center;
-}
-.user-menu .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: var(--accent-secondary);
-  margin: 0 auto 10px;
-}
-.user-menu .username {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-.user-menu .status {
-  font-size: 0.8rem;
-  color: var(--accent-primary);
-}
-
-/* Estilos para a Página de Histórico */
-.historical-page-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  gap: 20px; /* Espaço entre os painéis */
-}
-
-/* O painel de controlo superior que agrupa tudo */
-.historical-controls-bar {
-  background-color: var(--bg-panel);
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 20px; /* Espaço interno no painel */
-}
-
-/* Linha superior com o título e o seletor de data */
 .historical-header {
   display: flex;
   justify-content: space-between;
@@ -218,7 +247,6 @@ body {
   font-size: 0.9rem;
 }
 
-/* Linha inferior com as métricas e o seletor de gráfico */
 .historical-summary-and-controls {
   display: flex;
   justify-content: space-between;
@@ -340,13 +368,14 @@ body {
   cursor: not-allowed;
 }
 
-/* Estilos para a Página de Configuração */
+
+/* --- Layout para a Página de Configuração --- */
 .config-page-container {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 800px; /* Limita a largura para melhor legibilidade */
-  margin: 0 auto; /* Centra na página */
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .config-section {
@@ -411,11 +440,44 @@ body {
 .config-save-btn {
   align-self: flex-start;
   margin-top: 10px;
-  width: auto; /* Para não ocupar a largura toda */
+  width: auto;
   padding: 12px 24px;
 }
 
-/* Estilo para o Toggle Switch */
+/* --- Componentes Genéricos --- */
+.content-placeholder {
+  width: 100%;
+  height: 100%;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.user-menu {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  text-align: center;
+}
+.user-menu .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--accent-secondary);
+  margin: 0 auto 10px;
+}
+.user-menu .username {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.user-menu .status {
+  font-size: 0.8rem;
+  color: var(--accent-primary);
+}
+
 .toggle-switch {
   position: relative;
   display: inline-block;
