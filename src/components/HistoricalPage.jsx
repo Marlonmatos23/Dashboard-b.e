@@ -88,32 +88,34 @@ const HistoricalPage = () => {
     'Autonomia': { label: 'Autonomia', unit: 'km' },
   };
 
-  useEffect(() => {
-    const fetchFullHistory = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await axios.get('http://localhost:5000/dados/completo');
-        if (res.data && Array.isArray(res.data)) {
-          setFullHistory(res.data);
-          if (res.data.length > 0) {
-            const firstDate = parseISO(res.data[0].Timestamp);
-            const lastDate = parseISO(res.data[res.data.length - 1].Timestamp);
-            if (isValid(firstDate) && isValid(lastDate)) {
-              setStartDate(format(firstDate, 'yyyy-MM-dd'));
-              setEndDate(format(lastDate, 'yyyy-MM-dd'));
+    useEffect(() => {
+      const fetchFullHistory = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const res = await axios.get('http://localhost:5000/dados/completo');
+          if (res.data && Array.isArray(res.data)) {
+            setFullHistory(res.data);
+            if (res.data.length > 0) {
+              const firstDate = parseISO(res.data[0].Timestamp);
+              const lastDate = parseISO(res.data[res.data.length - 1].Timestamp);
+              if (isValid(firstDate) && isValid(lastDate)) {
+                setStartDate(format(firstDate, 'yyyy-MM-dd'));
+                setEndDate(format(lastDate, 'yyyy-MM-dd'));
+              }
             }
           }
+        } catch (err) {
+          setError("Não foi possível carregar o histórico completo.");
+          console.error("Erro ao buscar histórico completo:", err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        setError("Não foi possível carregar o histórico completo.");
-        console.error("Erro ao buscar histórico completo:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFullHistory();
-  }, []);
+      };
+      fetchFullHistory();
+    }, []);
+
+    
 
   useEffect(() => {
     if (!startDate || !endDate) {

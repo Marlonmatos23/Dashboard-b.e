@@ -18,7 +18,7 @@ const AppContent = () => {
   const [showSponsors, setShowSponsors] = useState(() => !sessionStorage.getItem('splashScreenShown'));
 
   const fetchData = useCallback(() => {
-    axios.get('http://192.168.1.141:5000/dados')
+    axios.get('http://localhost:5000/dados')
       .then(res => {
         if (res.data && Array.isArray(res.data)) {
           setHistory(res.data.slice(-100));

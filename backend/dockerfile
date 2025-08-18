@@ -1,12 +1,20 @@
 FROM node:alpine
 
+# 2. Definir o diretório de trabalho dentro do container
 WORKDIR /app
 
-COPY * ./
+# 3. Copiar os ficheiros de dependência do backend
+# O ponto '.' refere-se ao contexto do build, que será a pasta 'backend'
+COPY package*.json ./
 
-RUN npm install
+# 4. Instalar apenas as dependências de produção para uma imagem mais leve
+RUN npm install --omit=dev
 
+# 5. Copiar todo o resto do código do backend para o container
+COPY . .
 
-EXPOSE 5000
+# 6. Expor a porta em que o servidor irá rodar
+EXPOSE 8004
 
-CMD ["node", "server.js"]
+# 7. O comando para iniciar o servidor
+CMD [ "node", "server.js" ]

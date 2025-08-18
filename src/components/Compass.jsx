@@ -1,66 +1,130 @@
-// src/components/Compass.jsx
-import React, { useEffect, useState } from 'react'
+import React from 'react';
 
-const Compass = () => {
-  const [rotation, setRotation] = useState(0)
-  const [direction, setDirection] = useState('Norte')
+// Estilos para o componente, podem ser movidos para um ficheiro CSS se preferir
+const styles = {
+  wrapper: {
+    display: 'flex',
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    gap: '20px',
+    padding: '10px',
+  },
+  compassSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+  },
+  compass: {
+    position: 'relative',
+    width: '120px',
+    height: '120px',
+  },
+  compassRose: {
+    width: '100%',
+    height: '100%',
+    borderRadius: '50%',
+    border: '2px solid var(--border-color)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  needle: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: '4px',
+    height: '50px',
+    backgroundColor: 'var(--accent-primary)',
+    transformOrigin: 'bottom center',
+    borderRadius: '4px 4px 0 0',
+    boxShadow: '0 0 10px var(--accent-primary)',
+    transition: 'transform 0.5s ease-in-out',
+  },
+  headingValue: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: 'var(--text-primary)',
+  },
+  divider: {
+    width: '1px',
+    height: '80%',
+    backgroundColor: 'var(--border-color)',
+  },
+  modeSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '15px',
+  },
+  modeTitle: {
+    fontSize: '0.9rem',
+    color: 'var(--text-secondary)',
+    margin: 0,
+    fontWeight: 500,
+    textTransform: 'uppercase',
+  },
+  modeValue: {
+    fontSize: '3rem',
+    fontWeight: 'bold',
+    lineHeight: 1,
+  },
+  modeDescription: {
+    fontSize: '1rem',
+    color: 'var(--text-primary)',
+    margin: 0,
+  }
+};
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newRotation = Math.random() * 360
-      setRotation(newRotation)
+const Compass = ({ heading, speedMode, loading }) => {
+  // Define a cor e a descrição com base no modo de velocidade
+  const getModeDetails = (mode) => {
+    switch (mode) {
+      case 'S':
+        return { description: 'Sport', color: '#e74c3c' }; // Vermelho para Sport
+      case 'E':
+        return { description: 'Eco', color: '#2ecc71' }; // Verde para Eco
+      default:
+        return { description: 'Normal', color: 'var(--accent-primary)' };
+    }
+  };
 
-      if (newRotation >= 0 && newRotation < 45) {
-        setDirection('Norte')
-      } else if (newRotation >= 45 && newRotation < 135) {
-        setDirection('Leste')
-      } else if (newRotation >= 135 && newRotation < 225) {
-        setDirection('Sul')
-      } else {
-        setDirection('Oeste')
-      }
-    }, 3000)
+  const modeDetails = getModeDetails(speedMode);
 
-    return () => clearInterval(interval)
-  }, [])
+  if (loading) {
+    return <div className="content-placeholder">A carregar Navegação...</div>;
+  }
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      color: '#fff'
-    }}>
-      <div style={{ marginBottom: '10px', fontSize: '20px' }}>
-        {direction}
-      </div>
-      <div
-        style={{
-          width: '60px',
-          height: '60px',
-          borderRadius: '50%',
-          border: '2px solid #00f6ff',
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            transform: `rotate(${rotation}deg)`,
-            transition: 'transform 3s ease-in-out',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '30px'
-          }}
-        >
-          <i className="fa-regular fa-compass"></i>
+    <div style={styles.wrapper}>
+      {/* Secção da Bússola */}
+      <div style={styles.compassSection}>
+        <div style={styles.compass}>
+          <div style={styles.compassRose}></div>
+          <div style={{...styles.needle, transform: `translate(-50%, -100%) rotate(${heading}deg)`}}></div>
+          <div style={styles.headingValue}>{heading}°</div>
         </div>
       </div>
-    </div>
-  )
-}
 
-export default Compass
+      {/* Divisor Vertical */}
+      <div style={styles.divider}></div>
+
+      {/* Secção do Modo de Operação */}
+      <div style={styles.modeSection}>
+        <span style={styles.modeTitle}>Modo</span>
+        <span style={{...styles.modeValue, color: modeDetails.color}}>
+          {speedMode || 'N/A'}
+        </span>
+        <span style={styles.modeDescription}>{modeDetails.description}</span>
+      </div>
+    </div>
+  );
+};
+
+export default Compass;
