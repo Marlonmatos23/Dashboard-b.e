@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar
 
 // Importe os seus logótipos locais
 import logoAneel from '../assets/logos/aneel.png';
@@ -21,10 +22,12 @@ const sponsors = [
 ];
 
 const Footer = () => {
+  const { t } = useTranslation(); // 2. Inicializar
+
   return (
     <footer className="footer-container">
       <div className="footer-content">
-        <span className="footer-title">Com o Apoio De:</span>
+        <span className="footer-title">{t('footerSupport')}</span> {/* 3. Usar 't' */}
         <div className="footer-logos">
           {sponsors.map(sponsor => (
             <img 

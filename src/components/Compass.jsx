@@ -1,6 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar
 
-// Estilos para o componente, podem ser movidos para um ficheiro CSS se preferir
+// ... (definição de 'styles' existente) ...
 const styles = {
   wrapper: {
     display: 'flex',
@@ -82,23 +83,26 @@ const styles = {
   }
 };
 
+
 const Compass = ({ heading, speedMode, loading }) => {
-  // Define a cor e a descrição com base no modo de velocidade
+  const { t } = useTranslation(); // 2. Inicializar
+
+  // 3. Traduzir descrições
   const getModeDetails = (mode) => {
     switch (mode) {
       case 'S':
-        return { description: 'Sport', color: '#e74c3c' }; // Vermelho para Sport
+        return { description: t('compassModeSport'), color: '#e74c3c' };
       case 'E':
-        return { description: 'Eco', color: '#2ecc71' }; // Verde para Eco
+        return { description: t('compassModeEco'), color: '#2ecc71' };
       default:
-        return { description: 'Normal', color: 'var(--accent-primary)' };
+        return { description: t('compassModeNormal'), color: 'var(--accent-primary)' };
     }
   };
 
   const modeDetails = getModeDetails(speedMode);
 
   if (loading) {
-    return <div className="content-placeholder">A carregar Navegação...</div>;
+    return <div className="content-placeholder">{t('compassLoading')}</div>; // 4. Traduzir placeholder
   }
 
   return (
@@ -117,7 +121,7 @@ const Compass = ({ heading, speedMode, loading }) => {
 
       {/* Secção do Modo de Operação */}
       <div style={styles.modeSection}>
-        <span style={styles.modeTitle}>Modo</span>
+        <span style={styles.modeTitle}>{t('compassMode')}</span> {/* 5. Traduzir título */}
         <span style={{...styles.modeValue, color: modeDetails.color}}>
           {speedMode || 'N/A'}
         </span>

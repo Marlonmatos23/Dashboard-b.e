@@ -7,8 +7,8 @@ import { Link } from 'react-router-dom';
 const UserMenu = () => {
   return (
     <div className="user-menu">
-      <div className="avatar"></div>
-      <p className="username">Marlon</p>
+      <div className=""></div>
+      <p className="username">LaCIS</p>
       <p className="status">Online</p>
       {/* Pode adicionar um link para uma página de perfil, se desejar */}
       {/* <Link to="/perfil">Ver Perfil</Link> */}

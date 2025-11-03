@@ -4,10 +4,12 @@ import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, TimeScale } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next'; // 1. Importar
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, TimeScale);
 
 const WindSpeedChart = () => {
+  const { t } = useTranslation(); // 2. Inicializar
   const [chartData, setChartData] = useState({ datasets: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,24 +35,31 @@ const WindSpeedChart = () => {
           setChartData({
             labels: labels,
             datasets: [{
-              label: 'Velocidade do Vento (km/h)', data: windSpeeds,
+              label: t('chartLabelWind'), // 3. Traduzir label
+              data: windSpeeds,
               borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.2)',
               fill: true, tension: 0.3, pointRadius: 0,
             }]
           });
         }
         setError(null);
-      } catch (err) { setError('Não foi possível carregar os dados de meteorologia.'); } 
+      } catch (err) { 
+        setError(t('chartErrorWind')); // 4. Traduzir erro
+      } 
       finally { setLoading(false); }
     };
     fetchWindData();
-  }, []);
+  }, [t]); // 5. Adicionar 't' às dependências
 
   const chartOptions = {
     maintainAspectRatio: false, responsive: true, animation: { duration: 800 },
     plugins: {
       legend: { labels: { color: '#FFFFFF' } },
-      title: { display: true, text: `Vel. Vento Agora: ${currentWindSpeed !== null ? currentWindSpeed.toFixed(1) + ' km/h' : '---'}`, color: '#FFFFFF', font: { size: 16 } },
+      title: { 
+        display: true, 
+        text: `${t('chartTitleWind')}: ${currentWindSpeed !== null ? currentWindSpeed.toFixed(1) + ' km/h' : '---'}`, // 6. Traduzir título
+        color: '#FFFFFF', font: { size: 16 } 
+      },
     },
     scales: {
       x: { type: 'time', time: { unit: 'hour', tooltipFormat: 'dd/MM HH:mm' }, ticks: { color: '#FFFFFF' }, grid: { color: '#3A3A3C' }, },
@@ -58,7 +67,8 @@ const WindSpeedChart = () => {
     },
   };
 
-  if (loading) return <div className="content-placeholder">A carregar dados do vento...</div>;
+  // 7. Traduzir placeholders
+  if (loading) return <div className="content-placeholder">{t('chartLoadingWind')}</div>;
   if (error) return <div className="content-placeholder" style={{color: '#e74c3c'}}>{error}</div>;
   return <Line data={chartData} options={chartOptions} />;
 };

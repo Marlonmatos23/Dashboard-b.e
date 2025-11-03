@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar
 
 // --- Função para obter cores dinâmicas com base na percentagem ---
 const getBatteryColors = (percentage) => {
+  // ... (lógica existente) ...
   if (percentage == null) {
     return { c1: 'var(--text-secondary)', c2: 'var(--text-secondary)', c3: 'var(--text-secondary)', c4: 'var(--text-secondary)' };
   }
@@ -14,28 +16,22 @@ const getBatteryColors = (percentage) => {
   return { c1: '#e74c3c', c2: '#c0392b', c3: '#f39c12', c4: '#e67e22' };
 };
 
-// Componente para o display animado da percentagem da bateria
-const BatteryPercentage = ({ percentage, loading }) => {
-  // --- NOVA LÓGICA DE ANIMAÇÃO ---
-  // Estado para o valor que é realmente exibido no ecrã
+// 2. Aceitar 'title' como prop (ou usar hook t)
+const BatteryPercentage = ({ percentage, loading, title }) => {
+  const { t } = useTranslation(); // 3. Inicializar
   const [displayPercentage, setDisplayPercentage] = useState(0);
 
   useEffect(() => {
-    // Se não houver dados, reseta para 0
+    // ... (lógica de animação existente) ...
     if (percentage == null) {
       setDisplayPercentage(0);
       return;
     }
-
     const targetPercentage = Math.round(percentage);
-    
-    // Se a diferença for pequena, atualiza instantaneamente para evitar animações desnecessárias
     if (Math.abs(targetPercentage - displayPercentage) < 2) {
       setDisplayPercentage(targetPercentage);
       return;
     }
-
-    // Configura um intervalo para animar a contagem
     const interval = setInterval(() => {
       setDisplayPercentage(prev => {
         if (prev < targetPercentage) {
@@ -44,17 +40,13 @@ const BatteryPercentage = ({ percentage, loading }) => {
         if (prev > targetPercentage) {
           return prev - 1;
         }
-        // Quando o valor é alcançado, limpa o intervalo
         clearInterval(interval);
         return prev;
       });
-    }, 20); // A velocidade da animação (20ms por passo)
-
-    // Função de limpeza para parar a animação se o componente for desmontado
+    }, 20); 
     return () => clearInterval(interval);
-  }, [percentage]); // O efeito é re-executado sempre que a prop 'percentage' muda
+  }, [percentage]); 
 
-  // Obtém as cores com base na percentagem atual
   const colors = getBatteryColors(loading ? null : percentage);
   
   const dynamicBoxShadow = `
@@ -64,6 +56,7 @@ const BatteryPercentage = ({ percentage, loading }) => {
     -0.5em -0.5em 3em ${colors.c4}
   `;
 
+  // ... (stylesheet e styles existentes) ...
   const styleSheet = `
     @keyframes rotate {
       from { transform: rotate(0deg); }
@@ -98,18 +91,19 @@ const BatteryPercentage = ({ percentage, loading }) => {
     }
   };
 
+
   if (loading && percentage == null) {
-    return <div className="content-placeholder">A carregar...</div>;
+    return <div className="content-placeholder">{t('statusLoading')}</div>; // 4. Traduzir
   }
 
   return (
     <>
       <style>{styleSheet}</style>
       <div className="loader-container">
-        <h3 style={styles.title}>Percentagem da Bateria</h3>
+        {/* 5. Usar prop 'title' ou 't' */}
+        <h3 style={styles.title}>{title || t('chartTitleBatteryPercent')}</h3>
         <div style={styles.loader}>
           <div style={styles.intern}>
-            {/* Exibe o valor animado */}
             {percentage != null ? `${displayPercentage}%` : 'N/A'}
           </div>
           <div style={styles.externalShadow}>

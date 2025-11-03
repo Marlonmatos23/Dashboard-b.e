@@ -3,10 +3,11 @@ import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
+import { useTranslation } from 'react-i18next'; // 1. Importar
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-// Função para criar o gradiente de fundo do gráfico
+// ... (função createGradient continua a mesma) ...
 const createGradient = (ctx, area, color1, color2) => {
   const gradient = ctx.createLinearGradient(0, area.bottom, 0, area.top);
   gradient.addColorStop(0, color1);
@@ -14,11 +15,14 @@ const createGradient = (ctx, area, color1, color2) => {
   return gradient;
 };
 
+
 const ChartComponent = ({ data, options, loading }) => {
+  const { t } = useTranslation(); // 2. Inicializar
   const chartRef = useRef(null);
   const [chartData, setChartData] = useState({ labels: [], datasets: [] });
 
   useEffect(() => {
+    // ... (lógica existente do useEffect) ...
     const chart = chartRef.current;
     if (!chart) return;
 
@@ -36,15 +40,16 @@ const ChartComponent = ({ data, options, loading }) => {
         label: options?.label || 'Dataset',
         data: data || [],
         ...datasetOptions,
-        backgroundColor: gradientBg, // Aplica o gradiente
+        backgroundColor: gradientBg, 
       }],
     });
   }, [data, options]);
 
   const chartJS_options = {
+    // ... (opções existentes) ...
     maintainAspectRatio: false,
     responsive: true,
-    animation: { duration: 800, easing: 'easeInOutCubic' }, // Animação mais suave
+    animation: { duration: 800, easing: 'easeInOutCubic' }, 
     scales: {
       y: {
         ticks: { color: '#EAEAEA', font: { size: 10 } },
@@ -54,11 +59,11 @@ const ChartComponent = ({ data, options, loading }) => {
       },
       x: {
         ticks: { color: '#EAEAEA', font: { size: 10 } },
-        grid: { display: false } // Remove as grelhas verticais para um look mais limpo
+        grid: { display: false } 
       }
     },
     plugins: {
-      legend: { display: false }, // Legenda removida para um visual mais limpo (o título já informa)
+      legend: { display: false }, 
       title: {
         display: !!options?.title,
         text: options?.title,
@@ -82,8 +87,9 @@ const ChartComponent = ({ data, options, loading }) => {
     }
   };
 
-  if (loading) return <div className="content-placeholder">A carregar...</div>;
-  if (!data || data.length === 0) return <div className="content-placeholder">Sem dados.</div>;
+  // 3. Traduzir placeholders
+  if (loading) return <div className="content-placeholder">{t('statusLoading')}</div>;
+  if (!data || data.length === 0) return <div className="content-placeholder">{t('statusNoData')}</div>;
 
   return <Line ref={chartRef} data={chartData} options={chartJS_options} />;
 };

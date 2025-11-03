@@ -1,21 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
-// Importações necessárias para eixos de tempo
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, TimeScale } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { parseISO, format, isValid, startOfDay, endOfDay } from 'date-fns';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 
-// Registo do TimeScale para que o Chart.js reconheça eixos de tempo
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, TimeScale);
 
 // Componente da Tabela de Dados com Paginação
 const DataTable = ({ data }) => {
+  const { t } = useTranslation(); // Hook de tradução para a tabela
   const [currentPage, setCurrentPage] = useState(0);
   const rowsPerPage = 10;
   
   useEffect(() => {
-    // Reseta para a primeira página sempre que os dados do filtro mudam
     setCurrentPage(0);
   }, [data]);
 
@@ -31,14 +30,15 @@ const DataTable = ({ data }) => {
       <table className="data-table">
         <thead>
           <tr>
-            <th>Timestamp</th>
-            <th>Volt (V)</th>
-            <th>Velocidade (KPH)</th>
-            <th>Motor (RPM)</th>
-            <th>Temp. Motor (°C)</th>
-            <th>Temp. Controle (°C)</th>
-            <th>Corrente (A)</th>
-            <th>Autonomia (km)</th>
+            {/* 2. Traduzir cabeçalhos da tabela */}
+            <th>{t('histTableTimestamp')}</th>
+            <th>{t('histTableVolt')}</th>
+            <th>{t('histTableSpeed')}</th>
+            <th>{t('histTableMotorRPM')}</th>
+            <th>{t('histTableMotorTemp')}</th>
+            <th>{t('histTableControlTemp')}</th>
+            <th>{t('histTableCurrent')}</th>
+            <th>{t('histTableAutonomy')}</th>
           </tr>
         </thead>
         <tbody>
@@ -58,11 +58,12 @@ const DataTable = ({ data }) => {
       </table>
       {pageCount > 1 && (
         <div className="pagination">
-          <button onClick={() => goToPage(0)} disabled={currentPage === 0}>Primeira</button>
-          <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>Anterior</button>
-          <span>Página {currentPage + 1} de {pageCount}</span>
-          <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= pageCount - 1}>Próxima</button>
-          <button onClick={() => goToPage(pageCount - 1)} disabled={currentPage >= pageCount - 1}>Última</button>
+          {/* 3. Traduzir botões de paginação */}
+          <button onClick={() => goToPage(0)} disabled={currentPage === 0}>{t('histTableFirst')}</button>
+          <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>{t('histTablePrev')}</button>
+          <span>{t('histTablePage')} {currentPage + 1} {t('histTableOf')} {pageCount}</span>
+          <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= pageCount - 1}>{t('histTableNext')}</button>
+          <button onClick={() => goToPage(pageCount - 1)} disabled={currentPage >= pageCount - 1}>{t('histTableLast')}</button>
         </div>
       )}
     </div>
@@ -70,6 +71,7 @@ const DataTable = ({ data }) => {
 };
 
 const HistoricalPage = () => {
+  const { t } = useTranslation(); // 4. Importar hook principal da página
   const [fullHistory, setFullHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -78,14 +80,15 @@ const HistoricalPage = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [selectedVariable, setSelectedVariable] = useState('Volt');
   
+  // 5. Mapear variáveis para chaves de tradução
   const variableOptions = {
-    'Volt': { label: 'Voltagem', unit: 'V' },
-    'Speed_KPH': { label: 'Velocidade', unit: 'KPH' },
-    'Motor_Speed_RPM': { label: 'Motor', unit: 'RPM' },
-    'Motor_Temp_C': { label: 'Temp. Motor', unit: '°C' },
-    'Ctrl_Temp_C': { label: 'Temp. Controle', unit: '°C' },
-    'Current': { label: 'Corrente', unit: 'A' },
-    'Autonomia': { label: 'Autonomia', unit: 'km' },
+    'Volt': { labelKey: 'histChartLabelVolt', unitKey: 'histUnitVolt' },
+    'Speed_KPH': { labelKey: 'histChartLabelSpeed', unitKey: 'histUnitSpeed' },
+    'Motor_Speed_RPM': { labelKey: 'histChartLabelMotorRPM', unitKey: 'histUnitMotorRPM' },
+    'Motor_Temp_C': { labelKey: 'histChartLabelMotorTemp', unitKey: 'histUnitMotorTemp' },
+    'Ctrl_Temp_C': { labelKey: 'histChartLabelControlTemp', unitKey: 'histUnitControlTemp' },
+    'Current': { labelKey: 'histChartLabelCurrent', unitKey: 'histUnitCurrent' },
+    'Autonomia': { labelKey: 'histChartLabelAutonomy', unitKey: 'histUnitAutonomy' },
   };
 
     useEffect(() => {
@@ -93,7 +96,7 @@ const HistoricalPage = () => {
         setLoading(true);
         setError(null);
         try {
-          const res = await axios.get('http://localhost:5000/dados/completo');
+          const res = await axios.get('http://192.168.1.141:5000/dados/completo');
           if (res.data && Array.isArray(res.data)) {
             setFullHistory(res.data);
             if (res.data.length > 0) {
@@ -106,14 +109,14 @@ const HistoricalPage = () => {
             }
           }
         } catch (err) {
-          setError("Não foi possível carregar o histórico completo.");
+          setError(t('histError')); // 6. Traduzir mensagem de erro
           console.error("Erro ao buscar histórico completo:", err);
         } finally {
           setLoading(false);
         }
       };
       fetchFullHistory();
-    }, []);
+    }, [t]); // 7. Adicionar 't' como dependência
 
     
 
@@ -152,7 +155,8 @@ const HistoricalPage = () => {
   const chartData = {
     labels: filteredData.map(d => d.Timestamp),
     datasets: [{
-      label: variableOptions[selectedVariable].label, data: filteredData.map(d => d[selectedVariable]),
+      label: t(variableOptions[selectedVariable].labelKey), // 8. Traduzir label do gráfico
+      data: filteredData.map(d => d[selectedVariable]),
       borderColor: 'var(--accent-primary)', backgroundColor: 'rgba(0, 167, 157, 0.2)',
       fill: true, tension: 0.3, pointRadius: 2,
     }]
@@ -161,7 +165,7 @@ const HistoricalPage = () => {
     maintainAspectRatio: false, responsive: true,
     scales: {
       x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy HH:mm' }, ticks: { color: '#FFFFFF' }, grid: { color: 'var(--border-color)' } },
-      y: { ticks: { color: '#FFFFFF' }, grid: { color: 'var(--border-color)' }, title: { display: true, text: variableOptions[selectedVariable].unit, color: 'var(--text-secondary)' } }
+      y: { ticks: { color: '#FFFFFF' }, grid: { color: 'var(--border-color)' }, title: { display: true, text: t(variableOptions[selectedVariable].unitKey), color: 'var(--text-secondary)' } } // 9. Traduzir unidade do eixo Y
     },
     plugins: {
       legend: { labels: { color: '#FFFFFF' } },
@@ -169,40 +173,41 @@ const HistoricalPage = () => {
     }
   };
 
-  if (loading) return <div className="content-placeholder">A carregar histórico completo...</div>;
+  if (loading) return <div className="content-placeholder">{t('histLoading')}</div>; // 10. Traduzir placeholders
   if (error) return <div className="content-placeholder" style={{color: 'red'}}>{error}</div>;
 
   return (
     <div className="historical-page-container">
+      {/* 11. Traduzir restante dos textos estáticos */}
       <div className="historical-controls-bar">
         <div className="historical-header">
-          <h1 className="historical-title">Histórico de Viagem</h1>
+          <h1 className="historical-title">{t('histTitle')}</h1>
           <div className="date-range-picker-container">
-            <label htmlFor="start-date">De:</label>
+            <label htmlFor="start-date">{t('histFrom')}</label>
             <input type="date" id="start-date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-            <label htmlFor="end-date">Até:</label>
+            <label htmlFor="end-date">{t('histTo')}</label>
             <input type="date" id="end-date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
         </div>
         <div className="historical-summary-and-controls">
           <div className="summary-metrics-group">
             <div className="metric-item">
-              <span className="metric-item-title">DISTÂNCIA TOTAL</span>
+              <span className="metric-item-title">{t('histSummaryDist')}</span>
               <span className="metric-item-value">{summaryMetrics.distance} km</span>
             </div>
             <div className="metric-item">
-              <span className="metric-item-title">ENERGIA CONSUMIDA</span>
+              <span className="metric-item-title">{t('histSummaryEnergy')}</span>
               <span className="metric-item-value">{summaryMetrics.energy} kWh</span>
             </div>
             <div className="metric-item">
-              <span className="metric-item-title">TEMPO DE VIAGEM</span>
+              <span className="metric-item-title">{t('histSummaryTime')}</span>
               <span className="metric-item-value">{summaryMetrics.time}</span>
             </div>
           </div>
           <div className="chart-controls">
-            <label htmlFor="variable-select">Visualizar:</label>
+            <label htmlFor="variable-select">{t('histView')}</label>
             <select id="variable-select" value={selectedVariable} onChange={e => setSelectedVariable(e.target.value)}>
-              {Object.keys(variableOptions).map(key => <option key={key} value={key}>{variableOptions[key].label}</option>)}
+              {Object.keys(variableOptions).map(key => <option key={key} value={key}>{t(variableOptions[key].labelKey)}</option>)}
             </select>
           </div>
         </div>
@@ -213,7 +218,7 @@ const HistoricalPage = () => {
           {filteredData.length > 0 ? (
             <Line data={chartData} options={chartOptions} />
           ) : (
-            <div className="content-placeholder">Sem dados para o período ou filtros selecionados.</div>
+            <div className="content-placeholder">{t('histNoData')}</div>
           )}
         </div>
       </div>

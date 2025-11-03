@@ -1,10 +1,12 @@
 import React from 'react';
 import ChartComponent from './ChartComponent';
 
-const ControlTempChart = ({ currentTemp, historyData, loading, minY, maxY }) => {
+// 1. Aceitar 'title' e 'label' como props
+const ControlTempChart = ({ currentTemp, historyData, loading, minY, maxY, title, label }) => {
   const chartOptions = {
-    title: `Temp. do Controlador: ${(!loading && currentTemp != null) ? currentTemp.toFixed(1) + '°C' : '---'}`,
-    label: 'Temp. Controlador (°C)',
+    // 2. Usar as props
+    title: `${title}: ${(!loading && currentTemp != null) ? currentTemp.toFixed(1) + '°C' : '---'}`,
+    label: label,
     datasetOptions: { borderColor: '#e74c3c', backgroundColor: 'rgba(231, 76, 60, 0.3)', fill: true },
     scales: { y: { min: minY, max: maxY } },
   };

@@ -34,8 +34,8 @@ const MiniMap = ({ id, position, zoom, routePoints, info }) => {
     if (routePoints && routePoints.length > 1) {
       L.Routing.control({
         waypoints: routePoints.map((point) => L.latLng(point[0], point[1])),
-        routeWhileDragging: false, // Não permite arrastar a rota enquanto é desenhada
-        addWaypoints: false,       // Não permite adicionar novos pontos à rota
+        routeWhileDragging: true, // Não permite arrastar a rota enquanto é desenhada
+        addWaypoints: true,       // Não permite adicionar novos pontos à rota
       }).addTo(map);
     }
 

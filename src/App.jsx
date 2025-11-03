@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import axios from 'axios';
-import { parseISO, differenceInSeconds, isValid } from 'date-fns'; // Importa funções de data
+// import axios from 'axios'; // Removido - não é mais necessário
+import { parseISO, differenceInSeconds, isValid } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import mqtt from 'mqtt'; // 1. Importar a biblioteca MQTT
 
 // Componentes da Aplicação
 import SponsorsScreen from './components/SponsorsScreen';
@@ -11,120 +13,182 @@ import ConfigPage from './components/ConfigPage';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
-import Notification from './components/Notification'; // <-- Importa o novo componente
+import Notification from './components/Notification';
 import './App.css';
 
+// --- Configurações do MQTT (ATUALIZADAS) ---
+const MQTT_BROKER_URL = 'wss://broker.hivemq.com:8884'; // ATUALIZADO (WSS e Porta 8884)
+const BOAT_ID = "barco-01"; // ID do barco para subscrever
+const MQTT_TOPICS = [
+  `boats/${BOAT_ID}/telemetry/live`,
+  `boats/${BOAT_ID}/trip/status`,
+  `boats/${BOAT_ID}/trip/log`
+];
+// ------------------------------------------
+
 const AppContent = () => {
+  const { t } = useTranslation();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [apiError, setApiError] = useState(null);
+  const [connectionError, setConnectionError] = useState(null); // Renomeado de apiError
   const [selectedChart, setSelectedChart] = useState('all');
   const [showSponsors, setShowSponsors] = useState(() => !sessionStorage.getItem('splashScreenShown'));
-  const [notifications, setNotifications] = useState([]); // <-- Estado para notificações
-  const lastTimestampRef = useRef(null); // Para guardar o último timestamp válido
-  const notificationTimeoutRef = useRef(null); // Ref para evitar notificações repetidas de dados antigos
+  const [notifications, setNotifications] = useState([]);
+  const lastTimestampRef = useRef(null);
+  const notificationTimeoutRef = useRef(null);
 
-  // Função para adicionar uma notificação (evita duplicados recentes)
   const addNotification = useCallback((message, type = 'error') => {
     setNotifications(prev => {
-      // Verifica se já existe uma notificação com a mesma mensagem
       if (prev.some(n => n.message === message)) {
-        return prev; // Não adiciona se já existir
+        return prev;
       }
       const newNotification = { id: Date.now(), message, type };
-      // Adiciona a nova e mantém no máximo 5 notificações
       return [newNotification, ...prev.slice(0, 4)];
     });
   }, []);
 
-  // Função para remover uma notificação pelo ID
   const removeNotification = useCallback((id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   }, []);
 
-  // Função principal para buscar dados e verificar falhas
-  const fetchData = useCallback(() => {
-    axios.get('http://localhost:5000/dados')
-      .then(res => {
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          const latestEntry = res.data[res.data.length - 1];
-          const currentTimestamp = latestEntry?.Timestamp ? parseISO(latestEntry.Timestamp) : null;
+  // 2. REMOVIDA: A função antiga `fetchData` (polling com axios) foi removida.
 
-          if (currentTimestamp && isValid(currentTimestamp)) {
-             const secondsDiff = differenceInSeconds(new Date(), currentTimestamp);
-             const MAX_DELAY_SECONDS = 60; // Limite de 60 segundos para considerar falha
+  // 3. NOVO: useEffect para a ligação MQTT
+  useEffect(() => {
+    if (showSponsors) return; // Não ligar antes do splash
 
-             if (secondsDiff > MAX_DELAY_SECONDS) {
-                // Adiciona notificação de dados antigos apenas se não houver uma recente
-                if (!notificationTimeoutRef.current) {
-                   addNotification(`Alerta: Último dado do sensor tem ${secondsDiff}s.`, 'warning');
-                   // Define um timeout para não mostrar esta notificação novamente por 1 minuto
-                   notificationTimeoutRef.current = setTimeout(() => {
-                       notificationTimeoutRef.current = null;
-                   }, 60000); // 1 minuto
-                }
-             } else {
-               // Dados recentes e válidos: atualiza a referência e limpa erros/avisos
-               lastTimestampRef.current = currentTimestamp;
-               if (apiError) setApiError(null); // Limpa erro da API
-               // Limpa o timeout da notificação de dados antigos se os dados voltaram ao normal
-               if (notificationTimeoutRef.current) {
-                  clearTimeout(notificationTimeoutRef.current);
-                  notificationTimeoutRef.current = null;
-               }
-             }
-          } else {
-             // Timestamp inválido (problema nos dados recebidos)
-             addNotification('Erro: Timestamp inválido recebido do sensor.', 'error');
-          }
-          setHistory(res.data.slice(-100)); // Atualiza o histórico
-        } else {
-          // Resposta vazia da API (pode ser temporário ou não)
-           addNotification('Aviso: Nenhum dado recebido do servidor.', 'warning');
-        }
-        // Limpa o erro da API se a conexão foi bem-sucedida
-        if(apiError) setApiError(null);
-      })
-      .catch(err => {
-        const errorMsg = 'Falha: Não foi possível conectar ao servidor de dados.';
-        if (!apiError) { // Mostra o erro de API apenas uma vez
+    setLoading(true);
+    setConnectionError(null);
+
+    // Gerar clientId e opções de conexão
+    const clientId = `electric_boat_dashboard_${Math.random().toString(16).substr(2, 8)};`; // ID Único
+    console.log(`==================================${clientId}`)
+    const connectOptions = {
+      clientId,
+      protocol: 'wss', // Especificar wss para porta 8884
+    };
+
+    // Ligar ao Broker MQTT
+    const client = mqtt.connect(MQTT_BROKER_URL, connectOptions);
+
+    client.on('connect', () => {
+      console.log('Conectado ao MQTT Broker!');
+      setLoading(false); // Conectado, parar o loading
+      if (connectionError) setConnectionError(null); // Limpar erro antigo
+      
+      // Subscrever aos tópicos (agora um array)
+      client.subscribe(MQTT_TOPICS, (err) => {
+        if (err) {
+          console.error('Erro ao subscrever aos tópicos:', err);
+          const errorMsg = 'Falha ao subscrever aos tópicos MQTT.';
           addNotification(errorMsg, 'error');
-          setApiError(errorMsg); // Guarda o estado do erro
+          setConnectionError(errorMsg);
+        } else {
+          console.log(`Subscrito aos tópicos: ${MQTT_TOPICS.join(', ')}`);
         }
-        console.error("Erro no fetch:", err.response?.data || err.message);
-      })
-      .finally(() => { if (loading) setLoading(false); });
-  }, [apiError, loading, addNotification]); // Adiciona addNotification às dependências
+      });
+    });
 
-  // Efeito para buscar dados e verificar a "saúde" dos dados periodicamente
+    // Evento de nova mensagem (LÓGICA ATUALIZADA)
+    client.on('message', (topic, message) => {
+      try {
+        const payloadString = message.toString();
+        
+        // Rota 1: Mensagem de Telemetria (para os gráficos)
+        if (topic === `boats/${BOAT_ID}/telemetry/live`) {
+          const newDataPoint = JSON.parse(payloadString);
+          
+          if (!newDataPoint.Timestamp) {
+            newDataPoint.Timestamp = new Date().toISOString();
+          }
+
+          setHistory(prevHistory => {
+            const updatedHistory = [...prevHistory, newDataPoint];
+            return updatedHistory.slice(-100);
+          });
+
+          const currentTimestamp = parseISO(newDataPoint.Timestamp);
+          if (isValid(currentTimestamp)) {
+            lastTimestampRef.current = currentTimestamp;
+            if (notificationTimeoutRef.current) {
+              clearTimeout(notificationTimeoutRef.current);
+              notificationTimeoutRef.current = null;
+            }
+          } else {
+            addNotification(t('appAlertTimestamp'), 'error');
+          }
+        } 
+        
+        // Rota 2: Mensagem de Status da Viagem (para notificação)
+        else if (topic === `boats/${BOAT_ID}/trip/status`) {
+          // Ex: payloadString pode ser "Iniciada", "Concluída", etc.
+          addNotification(`${t('appTripStatus')}: ${payloadString}`, 'info'); // 'info' é tipo azul
+        } 
+        
+        // Rota 3: Mensagem de Log da Viagem (para notificação)
+        else if (topic === `boats/${BOAT_ID}/trip/log`) {
+          console.log("Log da Viagem Recebido:", payloadString);
+          addNotification(t('appTripLogReceived'), 'info');
+        }
+
+      } catch (e) {
+        console.error('Erro ao processar mensagem MQTT:', e);
+        addNotification('Erro: Falha ao processar dado recebido.', 'error');
+      }
+    });
+
+    // Evento de erro de ligação
+    client.on('error', (err) => {
+      console.error('Erro de conexão MQTT:', err);
+      const errorMsg = t('appAlertConnectFail');
+      // Evita spam de notificações se o erro persistir
+      if (connectionError !== errorMsg) { 
+        addNotification(errorMsg, 'error');
+        setConnectionError(errorMsg);
+      }
+      setLoading(false);
+    });
+
+    client.on('close', () => {
+      console.log('Desconectado do MQTT Broker.');
+      // Opcional: Adicionar lógica de notificação ou reconexão
+    });
+
+    // Função de limpeza ao desmontar o componente
+    return () => {
+      if (client) {
+        client.end(); // Fecha a ligação
+      }
+    };
+    // Adicionado connectionError para re-tentar a ligação se o erro mudar
+  }, [showSponsors, addNotification, t, connectionError]);
+
+
+  // 4. MODIFICADO: useEffect para Health Check (agora verifica a última mensagem MQTT)
   useEffect(() => {
     if (showSponsors) return;
 
-    fetchData(); // Busca inicial
-    const intervalId = setInterval(fetchData, 5000); // Continua a buscar a cada 5s
-
-    // Adiciona uma verificação extra a cada 15 segundos para ver se parou de receber dados
+    // O health-check agora verifica se a última mensagem MQTT é antiga
     const healthCheckIntervalId = setInterval(() => {
       if (lastTimestampRef.current) {
         const secondsDiff = differenceInSeconds(new Date(), lastTimestampRef.current);
         if (secondsDiff > 15) { // Se não recebe dados válidos por mais de 15s
-          addNotification(`Alerta: Sem dados válidos do sensor há mais de ${secondsDiff} segundos.`, 'warning');
+          addNotification(t('appAlertNoDataStreaming', { seconds: secondsDiff }), 'warning');
         }
-      } else if (!loading && !apiError && history.length > 0) {
-          // Se não está carregando, não tem erro de API, JÁ recebeu dados antes, mas nunca um timestamp válido
-          addNotification(`Aviso: Aguardando o primeiro dado válido do sensor.`, 'warning');
+      } else if (!loading && !connectionError && history.length === 0) {
+          // Se não está carregando, não tem erro, mas nunca recebeu nada
+          addNotification(t('appAlertWaitingValid'), 'warning');
       }
     }, 15000); // Verifica a cada 15 segundos
 
     // Limpa os intervalos e timeouts ao desmontar
     return () => {
-      clearInterval(intervalId);
       clearInterval(healthCheckIntervalId);
       if (notificationTimeoutRef.current) {
         clearTimeout(notificationTimeoutRef.current);
       }
     };
-  }, [showSponsors, fetchData, loading, apiError, addNotification, history.length]); // Adiciona history.length
+  }, [showSponsors, loading, connectionError, addNotification, history.length, t]);
 
   const latestData = history.length > 0 ? history[history.length - 1] : null;
   const handleSponsorsFinished = () => { sessionStorage.setItem('splashScreenShown', 'true'); setShowSponsors(false); };
@@ -135,7 +199,6 @@ const AppContent = () => {
 
   return (
     <div className="app-container">
-      {/* Container que renderiza as notificações */}
       <div className="notification-container">
         {notifications.map(notification => (
           <Notification
@@ -153,8 +216,8 @@ const AppContent = () => {
       <main className="content">
         <div className="main-view-wrapper">
           <Routes>
-            <Route path="/" element={<DashboardPage history={history} latestData={latestData} selectedChart={selectedChart} loading={loading && history.length === 0} error={apiError} />} />
-            {/* HistoricalPage agora busca seus próprios dados */}
+            {/* Passa o 'connectionError' em vez do 'apiError' */}
+            <Route path="/" element={<DashboardPage history={history} latestData={latestData} selectedChart={selectedChart} loading={loading && history.length === 0} error={connectionError} />} />
             <Route path="/historico" element={<HistoricalPage />} />
             <Route path="/configuracao" element={<ConfigPage />} />
           </Routes>
@@ -167,4 +230,3 @@ const AppContent = () => {
 
 const App = () => (<BrowserRouter><AppContent /></BrowserRouter>);
 export default App;
-

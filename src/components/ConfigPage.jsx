@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 
 // Um componente reutilizável para o toggle switch, para um visual moderno
 const ToggleSwitch = ({ id, checked, onChange }) => {
@@ -11,10 +12,12 @@ const ToggleSwitch = ({ id, checked, onChange }) => {
 };
 
 const ConfigPage = () => {
+  // 2. Obter 't' (função de tradução) e 'i18n' (instância)
+  const { t, i18n } = useTranslation();
+
   // Estados para gerir as configurações (valores de exemplo)
-  // No futuro, estes valores poderiam vir de um contexto global ou de uma API
   const [settings, setSettings] = useState({
-    language: 'pt-br',
+    // language: 'pt-br', // Removido, agora é global
     lowBatteryAlert: true,
     lowBatteryThreshold: 20,
     highMotorTempAlert: true,
@@ -27,37 +30,44 @@ const ConfigPage = () => {
   };
 
   const handleValueChange = (key, value) => {
-    // Garante que o valor é tratado como número onde for apropriado
     const numericValue = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
     setSettings(prev => ({ ...prev, [key]: numericValue }));
   };
 
-  // Função para salvar as configurações (atualmente apenas exibe um alerta)
+  // 3. Handler para mudar o idioma globalmente
+  const handleLanguageChange = (e) => {
+    i18n.changeLanguage(e.target.value);
+  };
+
+  // Função para salvar as configurações
   const saveSettings = () => {
     console.log("Configurações salvas:", settings);
-    // Em uma aplicação real, aqui você enviaria as configurações para o backend ou as salvaria no localStorage
-    alert('Configurações salvas (funcionalidade de exemplo)!');
+    alert(t('configSaveAlert')); // 4. Traduzir o alerta
   };
+
+  // 5. Detectar idioma atual (simplificado para 'pt' ou 'en')
+  const currentLang = i18n.language.startsWith('pt') ? 'pt' : 'en';
 
   return (
     <div className="config-page-container">
-      <h1 style={{ fontSize: '2rem', fontWeight: 600, color: 'var(--text-primary)' }}>Configurações</h1>
+      {/* 6. Traduzir todos os textos estáticos */}
+      <h1 style={{ fontSize: '2rem', fontWeight: 600, color: 'var(--text-primary)' }}>{t('configTitle')}</h1>
 
       {/* Seção de Configurações Gerais */}
       <section className="config-section">
-        <h2 className="config-section-title">Geral</h2>
+        <h2 className="config-section-title">{t('configGeneral')}</h2>
         <div className="config-option">
           <div className="config-option-label">
-            <strong>Idioma</strong>
-            <span>Mude o idioma da interface.</span>
+            <strong>{t('configLangLabel')}</strong>
+            <span>{t('configLangDesc')}</span>
           </div>
           <div className="config-option-control">
             <select
-              value={settings.language}
-              onChange={(e) => handleValueChange('language', e.target.value)}
+              value={currentLang} // Usar o idioma do i18n
+              onChange={handleLanguageChange} // Usar o novo handler
             >
-              <option value="pt-br">Português (Brasil)</option>
-              <option value="en-us">English (US)</option>
+              <option value="pt">Português (Brasil)</option>
+              <option value="en">English (US)</option>
             </select>
           </div>
         </div>
@@ -65,11 +75,11 @@ const ConfigPage = () => {
 
       {/* Seção de Alertas */}
       <section className="config-section">
-        <h2 className="config-section-title">Alertas e Notificações</h2>
+        <h2 className="config-section-title">{t('configAlerts')}</h2>
         <div className="config-option">
           <div className="config-option-label">
-            <strong>Alerta de Bateria Baixa</strong>
-            <span>Receba uma notificação quando a bateria estiver abaixo do limiar.</span>
+            <strong>{t('configAlertBattery')}</strong>
+            <span>{t('configAlertBatteryDesc')}</span>
           </div>
           <div className="config-option-control" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <input
@@ -85,8 +95,8 @@ const ConfigPage = () => {
         </div>
         <div className="config-option">
           <div className="config-option-label">
-            <strong>Alerta de Temperatura Alta do Motor</strong>
-            <span>Receba uma notificação quando a temperatura exceder o limiar.</span>
+            <strong>{t('configAlertMotorTemp')}</strong>
+            <span>{t('configAlertMotorTempDesc')}</span>
           </div>
           <div className="config-option-control" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <input
@@ -104,28 +114,28 @@ const ConfigPage = () => {
 
        {/* Seção de Dados */}
        <section className="config-section">
-        <h2 className="config-section-title">Dados e Atualização</h2>
+        <h2 className="config-section-title">{t('configData')}</h2>
         <div className="config-option">
           <div className="config-option-label">
-            <strong>Frequência de Atualização</strong>
-            <span>Intervalo em que os dados do dashboard são atualizados.</span>
+            <strong>{t('configRefreshLabel')}</strong>
+            <span>{t('configRefreshDesc')}</span>
           </div>
           <div className="config-option-control">
             <select
               value={settings.refreshRate}
               onChange={(e) => handleValueChange('refreshRate', e.target.value)}
             >
-              <option value={2}>2 segundos</option>
-              <option value={5}>5 segundos (Padrão)</option>
-              <option value={10}>10 segundos</option>
-              <option value={30}>30 segundos</option>
+              <option value={2}>{t('configRefresh2s')}</option>
+              <option value={5}>{t('configRefresh5s')}</option>
+              <option value={10}>{t('configRefresh10s')}</option>
+              <option value={30}>{t('configRefresh30s')}</option>
             </select>
           </div>
         </div>
       </section>
 
       <button className="menu-button-base active config-save-btn" onClick={saveSettings}>
-        Salvar Alterações
+        {t('configSave')}
       </button>
     </div>
   );
