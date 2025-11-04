@@ -96,7 +96,7 @@ const HistoricalPage = () => {
         setLoading(true);
         setError(null);
         try {
-          const res = await axios.get('http://192.168.1.141:5000/dados/completo');
+          const res = await axios.get('http://localhost:5000/dados/completo');
           if (res.data && Array.isArray(res.data)) {
             setFullHistory(res.data);
             if (res.data.length > 0) {

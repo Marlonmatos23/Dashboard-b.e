@@ -1,0 +1,63 @@
+/* src/components/ConnectionIcon.css */
+
+.connection-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.5s ease-in-out, color 0.5s ease-in-out;
+    color: var(--text-secondary); /* Cor padrão (desconectado ou conectando) */
+}
+
+.connection-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.connection-icon .plug-cable {
+    stroke: currentColor; /* Usa a cor do .connection-icon */
+}
+
+.connection-icon .lightning {
+    fill: none; /* Escondido por padrão, aparece quando conectado */
+    transition: fill 0.5s ease-in-out;
+}
+
+.connection-icon .plug,
+.connection-icon .socket {
+    stroke: currentColor;
+    transition: stroke 0.5s ease-in-out;
+}
+
+
+/* --- ESTADOS DA CONEXÃO --- */
+
+/* Conectando... (cinzento, girando suavemente) */
+.connection-icon.connecting {
+    color: var(--text-secondary); /* Cinzento */
+    animation: spin 2s linear infinite; /* Rotação para indicar carregamento */
+}
+
+/* Conectado (verde, plug "encaixado", raio visível) */
+.connection-icon.connected {
+    color: var(--accent-primary); /* Verde */
+    transform: rotate(0deg); /* Garante que está na posição normal */
+}
+
+.connection-icon.connected .lightning {
+    fill: var(--accent-primary); /* Raio verde quando conectado */
+}
+
+/* Desconectado (vermelho, plug "desencaixado") */
+.connection-icon.disconnected {
+    color: #e74c3c; /* Vermelho */
+    transform: rotate(45deg); /* Gira para simular desconectado */
+}
+
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

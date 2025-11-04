@@ -1,11 +1,11 @@
-// src/components/Header.jsx
-import React from 'react'
-import Clock from './Clock'
-import './Header.css'
-import { useTranslation } from 'react-i18next' // 1. Importar
+import React from 'react';
+import Clock from './Clock';
+import './Header.css';
+import { useTranslation } from 'react-i18next'; 
+import ConnectionIcon from './ConnectionIcon'; // Importar o novo componente de ícone
 
-const Header = () => {
-  const { t } = useTranslation() // 2. Inicializar
+const Header = ({ connectionStatus }) => {
+  const { t } = useTranslation();
 
   return (
     <header className="header">
@@ -13,13 +13,15 @@ const Header = () => {
         <Clock type="date" />
       </div>
       <div className="header-center">
-        {t('headerTitle')} {/* 3. Usar o 't' */}
+        {t('headerTitle')}
+        {/* Usar o novo componente ConnectionIcon */}
+        <ConnectionIcon status={connectionStatus} /> 
       </div>
       <div className="header-right">
         <Clock type="time" />
       </div>
     </header>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;

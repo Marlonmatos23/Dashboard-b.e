@@ -1,5 +1,3 @@
-/* src/components/Header.css */
-
 .header {
     grid-area: header; /* Posicionamento via Grid definido em App.css */
     width: 100%;
