@@ -43,7 +43,8 @@ services:
       - "80:80"   # HTTP
       - "443:443" # HTTPS
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      # Monta o arquivo de configuração dentro do diretório de configurações do Nginx
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/barco.conf
       - ./certs:/etc/nginx/certs # <-- Use caminho relativo
     depends_on:
       - frontend
