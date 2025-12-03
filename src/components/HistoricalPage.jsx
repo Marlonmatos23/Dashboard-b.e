@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next'; // Importar hook
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, TimeScale);
 
 // URL do Backend
-const BACKEND_URL = '/api';
+const BACKEND_URL = 'http://localhost:5000';
 
 // Componente da Tabela de Dados com Paginação
 const DataTable = ({ data }) => {
@@ -47,7 +47,7 @@ const DataTable = ({ data }) => {
         <tbody>
           {paginatedData.map((row) => (
             <tr key={row._id || row.Timestamp}> {/* Usar _id ou Timestamp como fallback */}
-              <td>{isValid(parseISO(row.Timestamp)) ? format(parseISO(row.Timestamp), 'dd/MM/yy HH:mm:ss') : 'Data inválida'}</td>
+              <td>{isValid(parseISO(row.Timestamp)) ? format(parseISO(row.Timestamp), 'yy/MM/dd HH:mm:ss') : 'Data inválida'}</td>
               <td>{row.Volt?.toFixed(2)}</td>
               <td>{row.Speed_KPH}</td>
               <td>{row.Motor_Speed_RPM}</td>
@@ -100,7 +100,7 @@ const HistoricalPage = () => {
         setError(null);
         try {
           // Usar a constante BACKEND_URL
-          const res = await axios.get(`${BACKEND_URL}/api/dados/completo`);
+          const res = await axios.get(`${BACKEND_URL}/dados/completo`);
           if (res.data && Array.isArray(res.data)) {
             
             // *** CORREÇÃO: Filtrar dados inválidos ***
