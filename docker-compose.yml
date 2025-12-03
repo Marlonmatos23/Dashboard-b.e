@@ -42,12 +42,8 @@ services:
     ports:
       - "80:80"   # HTTP
       - "443:443" # HTTPS
-    configs:
-      # Monta o docker config 'nginx_config' como um arquivo no caminho de destino
-      - source: nginx_config
-        target: /etc/nginx/conf.d/default.conf
-    volumes:      
-      # Certificados SSL (Caminho ABSOLUTO na sua máquina física)
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./certs:/etc/nginx/certs # <-- Use caminho relativo
     depends_on:
       - frontend
@@ -61,8 +57,3 @@ volumes:
 networks:
   barco-network:
     driver: bridge
-
-configs:
-  nginx_config:
-    # Aponta para o arquivo que será usado como configuração
-    file: ./nginx/nginx.conf
