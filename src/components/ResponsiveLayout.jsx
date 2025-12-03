@@ -1,4 +1,3 @@
-// src/components/ResponsiveLayout.jsx
 import React from 'react';
 import './ResponsiveLayout.css';
 

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import axios from 'axios'; // Usado para a API OpenMeteo
-import path from 'path'; // <-- CORREÇÃO: Importa o módulo 'path'
+import path from 'path'; 
 import { fileURLToPath } from 'url';
 
 // Configuração necessária para usar __dirname com ES Modules
@@ -20,6 +20,7 @@ app.use(cors());
 app.use(express.json());
 
 // Servir os ficheiros estáticos do frontend (da pasta 'public')
+// Esta seção é para um build de produção, pode não ser relevante para o 'vite dev'
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Configurações do Banco de Dados
@@ -32,7 +33,7 @@ mongoose.connect(uri)
   .then(() => console.log("Backend: Conectado ao MongoDB com sucesso!"))
   .catch((err) => console.error("Backend: Erro na conexão com o MongoDB:", err));
 
-// Schema do Mongoose
+// Schema do Mongoose (MANTIDO IGUAL, pois o frontend fará o mapeamento)
 const dadoSchema = new mongoose.Schema({
     Timestamp:  Date,
     Speed_KPH:  Number,
@@ -44,11 +45,32 @@ const dadoSchema = new mongoose.Schema({
     Speed_Mode: String,
     Autonomia: Number,
     Capacidade_Restante: Number,
-}, { timestamps: true });
+    // Adicionando campos que estavam no mapeamento do App.jsx
+    Heading: Number,
+    Latitude: Number,
+    Longitude: Number,
+    Porcentagem_Bateria: Number
+}, { timestamps: true, strict: false }); // strict: false para permitir campos extras se houver
 
 const Dado = mongoose.model('Dado', dadoSchema, collectionName);
 
 // --- Rotas da API ---
+
+// 1. ROTA PARA SALVAR NOVOS DADOS (vinda do frontend)
+app.post('/dados/save', async (req, res) => {
+  try {
+    // O body (req.body) já deve vir mapeado do frontend
+    // Corresponde ao dadoSchema
+    const novoDado = new Dado(req.body);
+    await novoDado.save();
+    res.status(201).json({ message: 'Dado salvo com sucesso' });
+  } catch (err) {
+    console.error("Backend: Erro ao salvar dado:", err.message);
+    res.status(500).json({ error: 'Erro ao salvar dado no banco' });
+  }
+});
+
+
 // Rota para o DASHBOARD (dados recentes)
 app.get('/dados', async (req, res) => {
   try {
@@ -59,6 +81,18 @@ app.get('/dados', async (req, res) => {
   }
 });
 
+// Rota para o DASHBOARD (API)
+app.get('/dados/api', async (req, res) => {
+  try {
+    const api = await Dado.find({}).sort({ timestamps: -1}).limit(100);
+    res.json(api.reverse());
+  } catch (err) {
+    res.status(500).json({ error: 'Erro a API não está funcionando'})
+  }
+
+});
+
+
 // Rota para o HISTÓRICO (dados completos)
 app.get('/dados/completo', async (req, res) => {
   try {
@@ -68,6 +102,17 @@ app.get('/dados/completo', async (req, res) => {
     res.status(500).json({ error: 'Erro ao buscar histórico completo' });
   }
 });
+
+// Rota para o HISTÓRICO (dados completos da API)
+app.get('/dados/completo/api', async (req, res) => {
+  try {
+    const todosOsDados = await Dado.find({}).sort({ Timestamp: 1 });
+    res.json(todosOsDados);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar histórico completo' });
+  }
+});
+
 
 // Rota para obter dados sobre Velocidade do Vento da API OpenMeteo
 const api_weather_url = "https://api.open-meteo.com/v1/forecast";

@@ -4,9 +4,12 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import 'chartjs-adapter-date-fns';
 import { parseISO, format, isValid, startOfDay, endOfDay } from 'date-fns';
 import axios from 'axios';
-import { useTranslation } from 'react-i18next'; // 1. Importar hook
+import { useTranslation } from 'react-i18next'; // Importar hook
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, TimeScale);
+
+// URL do Backend
+const BACKEND_URL = '/api';
 
 // Componente da Tabela de Dados com Paginação
 const DataTable = ({ data }) => {
@@ -30,7 +33,7 @@ const DataTable = ({ data }) => {
       <table className="data-table">
         <thead>
           <tr>
-            {/* 2. Traduzir cabeçalhos da tabela */}
+            {/* Traduzir cabeçalhos da tabela */}
             <th>{t('histTableTimestamp')}</th>
             <th>{t('histTableVolt')}</th>
             <th>{t('histTableSpeed')}</th>
@@ -43,7 +46,7 @@ const DataTable = ({ data }) => {
         </thead>
         <tbody>
           {paginatedData.map((row) => (
-            <tr key={row._id}>
+            <tr key={row._id || row.Timestamp}> {/* Usar _id ou Timestamp como fallback */}
               <td>{isValid(parseISO(row.Timestamp)) ? format(parseISO(row.Timestamp), 'dd/MM/yy HH:mm:ss') : 'Data inválida'}</td>
               <td>{row.Volt?.toFixed(2)}</td>
               <td>{row.Speed_KPH}</td>
@@ -58,7 +61,7 @@ const DataTable = ({ data }) => {
       </table>
       {pageCount > 1 && (
         <div className="pagination">
-          {/* 3. Traduzir botões de paginação */}
+          {/* Traduzir botões de paginação */}
           <button onClick={() => goToPage(0)} disabled={currentPage === 0}>{t('histTableFirst')}</button>
           <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0}>{t('histTablePrev')}</button>
           <span>{t('histTablePage')} {currentPage + 1} {t('histTableOf')} {pageCount}</span>
@@ -71,7 +74,7 @@ const DataTable = ({ data }) => {
 };
 
 const HistoricalPage = () => {
-  const { t } = useTranslation(); // 4. Importar hook principal da página
+  const { t } = useTranslation(); // Importar hook principal da página
   const [fullHistory, setFullHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -80,7 +83,7 @@ const HistoricalPage = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [selectedVariable, setSelectedVariable] = useState('Volt');
   
-  // 5. Mapear variáveis para chaves de tradução
+  // Mapear variáveis para chaves de tradução
   const variableOptions = {
     'Volt': { labelKey: 'histChartLabelVolt', unitKey: 'histUnitVolt' },
     'Speed_KPH': { labelKey: 'histChartLabelSpeed', unitKey: 'histUnitSpeed' },
@@ -96,27 +99,38 @@ const HistoricalPage = () => {
         setLoading(true);
         setError(null);
         try {
-          const res = await axios.get('http://localhost:5000/dados/completo');
+          // Usar a constante BACKEND_URL
+          const res = await axios.get(`${BACKEND_URL}/api/dados/completo`);
           if (res.data && Array.isArray(res.data)) {
-            setFullHistory(res.data);
-            if (res.data.length > 0) {
-              const firstDate = parseISO(res.data[0].Timestamp);
-              const lastDate = parseISO(res.data[res.data.length - 1].Timestamp);
+            
+            // *** CORREÇÃO: Filtrar dados inválidos ***
+            // Garante que cada registo 'd' existe E tem um 'Timestamp' que é uma string não vazia.
+            const validData = res.data.filter(d => d && typeof d.Timestamp === 'string' && d.Timestamp.length > 0);
+
+            setFullHistory(validData); // Define o estado apenas com dados válidos
+            
+            if (validData.length > 0) { // Usa validData aqui
+              const firstDate = parseISO(validData[0].Timestamp); // Agora é seguro
+              const lastDate = parseISO(validData[validData.length - 1].Timestamp); // Agora é seguro
               if (isValid(firstDate) && isValid(lastDate)) {
                 setStartDate(format(firstDate, 'yyyy-MM-dd'));
                 setEndDate(format(lastDate, 'yyyy-MM-dd'));
               }
+            } else {
+              // Se não houver dados, definir datas padrão
+              setStartDate(format(new Date(), 'yyyy-MM-dd'));
+              setEndDate(format(new Date(), 'yyyy-MM-dd'));
             }
           }
         } catch (err) {
-          setError(t('histError')); // 6. Traduzir mensagem de erro
+          setError(t('histError')); // Traduzir mensagem de erro
           console.error("Erro ao buscar histórico completo:", err);
         } finally {
           setLoading(false);
         }
       };
       fetchFullHistory();
-    }, [t]); // 7. Adicionar 't' como dependência
+    }, [t]); // Adicionar 't' como dependência
 
     
 
@@ -137,15 +151,31 @@ const HistoricalPage = () => {
   }, [startDate, endDate, fullHistory]);
 
   const summaryMetrics = useMemo(() => {
+    // Esta verificação agora é suficiente. Se não houver dados válidos, retorna 0.
     if (filteredData.length < 2) return { distance: 0, energy: 0, time: '0h 0m' };
+    
     let distance = 0, energy = 0;
     for (let i = 1; i < filteredData.length; i++) {
         const prev = filteredData[i-1], curr = filteredData[i];
-        if (!prev.Timestamp || !curr.Timestamp) continue;
-        const timeDiffHours = (parseISO(curr.Timestamp) - parseISO(prev.Timestamp)) / 3600000;
+        
+        // Esta verificação (que já existia) é segura porque 'filteredData' só tem itens com Timestamp
+        if (!prev.Timestamp || !curr.Timestamp || !curr.Speed_KPH) continue; 
+        
+        const prevDate = parseISO(prev.Timestamp);
+        const currDate = parseISO(curr.Timestamp);
+
+        // Adiciona uma verificação extra de validade (boa prática)
+        if (!isValid(prevDate) || !isValid(currDate)) continue;
+
+        const timeDiffHours = (currDate - prevDate) / 3600000;
+        if (timeDiffHours < 0 || timeDiffHours > (1/60)) continue; // Ignorar saltos grandes
+        
         distance += (curr.Speed_KPH || 0) * timeDiffHours;
-        energy += (curr.Volt || 0) * (curr.Current || 0) * timeDiffHours / 1000;
+        energy += (curr.Volt || 0) * (curr.Current || 0) * timeDiffHours / 1000; // kWh
     }
+    
+    // Esta linha agora é segura porque filteredData.length >= 2 (garantido acima)
+    // e todos os itens em filteredData têm Timestamps válidos.
     const totalTimeMinutes = (parseISO(filteredData[filteredData.length - 1].Timestamp) - parseISO(filteredData[0].Timestamp)) / 60000;
     const hours = Math.floor(totalTimeMinutes / 60);
     const minutes = Math.round(totalTimeMinutes % 60);
@@ -155,7 +185,7 @@ const HistoricalPage = () => {
   const chartData = {
     labels: filteredData.map(d => d.Timestamp),
     datasets: [{
-      label: t(variableOptions[selectedVariable].labelKey), // 8. Traduzir label do gráfico
+      label: t(variableOptions[selectedVariable].labelKey), // Traduzir label do gráfico
       data: filteredData.map(d => d[selectedVariable]),
       borderColor: 'var(--accent-primary)', backgroundColor: 'rgba(0, 167, 157, 0.2)',
       fill: true, tension: 0.3, pointRadius: 2,
@@ -165,7 +195,7 @@ const HistoricalPage = () => {
     maintainAspectRatio: false, responsive: true,
     scales: {
       x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy HH:mm' }, ticks: { color: '#FFFFFF' }, grid: { color: 'var(--border-color)' } },
-      y: { ticks: { color: '#FFFFFF' }, grid: { color: 'var(--border-color)' }, title: { display: true, text: t(variableOptions[selectedVariable].unitKey), color: 'var(--text-secondary)' } } // 9. Traduzir unidade do eixo Y
+      y: { ticks: { color: '#FFFFFF' }, grid: { color: 'var(--border-color)' }, title: { display: true, text: t(variableOptions[selectedVariable].unitKey), color: 'var(--text-secondary)' } } // Traduzir unidade do eixo Y
     },
     plugins: {
       legend: { labels: { color: '#FFFFFF' } },
@@ -173,12 +203,12 @@ const HistoricalPage = () => {
     }
   };
 
-  if (loading) return <div className="content-placeholder">{t('histLoading')}</div>; // 10. Traduzir placeholders
+  if (loading) return <div className="content-placeholder">{t('histLoading')}</div>; // Traduzir placeholders
   if (error) return <div className="content-placeholder" style={{color: 'red'}}>{error}</div>;
 
   return (
     <div className="historical-page-container">
-      {/* 11. Traduzir restante dos textos estáticos */}
+      {/* Traduzir restante dos textos estáticos */}
       <div className="historical-controls-bar">
         <div className="historical-header">
           <h1 className="historical-title">{t('histTitle')}</h1>

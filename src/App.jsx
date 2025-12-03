@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { parseISO, differenceInSeconds, isValid } from 'date-fns';
+import axios from 'axios'; 
 import { useTranslation } from 'react-i18next';
 import mqtt from 'mqtt'; // Biblioteca MQTT
 
@@ -27,9 +28,13 @@ const MQTT_TOPICS = [
 ];
 // --------------------------
 
+//----------------
+
+const BACKEND_URL = '/api';
+
 const AppContent = () => {
   const { t } = useTranslation();
-  // 2. Usar o hook de Definições
+  // Usar o hook de Definições
   const { settings } = useSettings(); 
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,14 +103,12 @@ const AppContent = () => {
         
         if (topic === `boats/${BOAT_ID}/telemetry/live`) {
           
-          // **** INÍCIO DA CORREÇÃO ****
-          // Mapeamento dos dados recebidos (do seu novo JSON) para os nomes que os gráficos usam.
-          // Também converte strings (como "80.0") para números.
+          // Mapeamento dos dados recebidos para os nomes que os gráficos e o banco usam.
           const newDataPoint = {
             Timestamp: payload.timestamp || new Date().toISOString(),
             
             // Dados Principais
-            Speed_KPH: parseFloat(payload.speedKPH), // Converte "80.0" para 80.0
+            Speed_KPH: parseFloat(payload.speedKPH), 
             Heading: parseFloat(payload.heading),
             Motor_Speed_RPM: parseFloat(payload.rpm),
             Motor_Temp_C: parseFloat(payload.temperature), // Mapeia 'temperature' para 'Motor_Temp_C'
@@ -118,21 +121,30 @@ const AppContent = () => {
             Volt: parseFloat(payload.battery?.voltage),
             Porcentagem_Bateria: parseFloat(payload.battery?.percentage), 
             
-            // Dados Faltantes (serão 'undefined', o que é OK para os gráficos)
-            Ctrl_Temp_C: parseFloat(payload.controlTemp), // (Este não estava no seu JSON de exemplo)
-            Current: parseFloat(payload.current),         // (Este não estava no seu JSON de exemplo)
-            Autonomia: parseFloat(payload.autonomia),     // (Este não estava no seu JSON de exemplo)
-            Capacidade_Restante: parseFloat(payload.capacidade), // (Este não estava no seu JSON de exemplo)
-            
-            // Dados que ainda não estão a ser usados (mas que vieram no JSON)
-            // windSpeed: parseFloat(payload.windSpeed), 
-            // courseToSteer: parseFloat(payload.courseToSteer),
+            // *** CORREÇÃO APLICADA AQUI ***
+            // Mapeia 'currentDraw' (do novo JSON) para 'Current' (usado pelos gráficos)
+            Current: parseFloat(payload.currentDraw),      
+
+            // Dados que podem estar faltando (serão 'undefined' ou NaN, o que é OK)
+            Ctrl_Temp_C: parseFloat(payload.controlTemp), 
+            Autonomia: parseFloat(payload.autonomia),     
+            Capacidade_Restante: parseFloat(payload.capacidade), 
           };
-          // **** FIM DA CORREÇÃO ****
 
 
-          // 3. LÓGICA DE ALERTA FUNCIONAL
-          // Verifica Alerta de Bateria
+          // ENVIAR DADO MAPEADO PARA O BACKEND SALVAR
+          axios.post(`${BACKEND_URL}/dados/save`, newDataPoint)
+            .then(response => {
+              // Log Opcional: console.log('Dado salvo no DB:', response.data.message);
+            })
+            .catch(err => {
+              // Log de erro não obstrutivo
+              console.warn('Erro ao salvar dado no backend:', err.message);
+              addNotification('Falha ao salvar dado no histórico', 'error');
+            });
+
+
+          // LÓGICA DE ALERTA FUNCIONAL (sem alterações)
           if (settings.lowBatteryAlert && 
               newDataPoint.Porcentagem_Bateria != null && 
               newDataPoint.Porcentagem_Bateria < settings.lowBatteryThreshold) {
@@ -141,10 +153,9 @@ const AppContent = () => {
               value: newDataPoint.Porcentagem_Bateria.toFixed(0), 
               limit: settings.lowBatteryThreshold 
             });
-            addNotification(msg, 'warning'); // addNotification já evita duplicados
+            addNotification(msg, 'warning');
           }
 
-          // Verifica Alerta de Temperatura do Motor
           if (settings.highMotorTempAlert && 
               newDataPoint.Motor_Temp_C != null && 
               newDataPoint.Motor_Temp_C > settings.highMotorTempThreshold) {
@@ -156,7 +167,7 @@ const AppContent = () => {
             addNotification(msg, 'warning');
           }
 
-          // Adiciona ao histórico
+          // Adiciona ao histórico (estado local do React para gráficos ao vivo)
           setHistory(prev => [...prev, newDataPoint].slice(-100)); 
 
           // Atualiza o timestamp
@@ -208,7 +219,7 @@ const AppContent = () => {
         mqttClientRef.current = null;
       }
     };
-  }, [showSponsors, t, addNotification, connectionError, settings]); // 4. Adicionar 'settings' às dependências
+  }, [showSponsors, t, addNotification, connectionError, settings]); // Adicionar 'settings' às dependências
 
   // ---- Health Check (Verificação de Saúde dos Dados) ----
   useEffect(() => {
@@ -273,7 +284,7 @@ const AppContent = () => {
               }
             />
             <Route path="/historico" element={<HistoricalPage />} />
-            {/* 5. Passar 'addNotification' para a ConfigPage */}
+            {/* Passar 'addNotification' para a ConfigPage */}
             <Route path="/configuracao" element={<ConfigPage addNotification={addNotification} />} />
           </Routes>
         </div>
@@ -283,7 +294,7 @@ const AppContent = () => {
   );
 };
 
-// 6. Envolver o AppContent com o SettingsProvider
+// Envolver o AppContent com o SettingsProvider
 const App = () => (
   <BrowserRouter>
     <SettingsProvider>

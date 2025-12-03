@@ -25,3 +25,4 @@ dist-ssr
 *.zip
 *.b.zip
 Dash-e.b.zip
+node_modules dist build .git .gitignore docker-compose.yml README.md
