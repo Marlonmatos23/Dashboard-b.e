@@ -22,10 +22,18 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/projeto_barco
       - COLLECTION_NAME=barco_info
       - PORT=5000
-    depends_on:
-      - mongodb
+    depends_on: # O backend depende do mongodb
+      mongodb:
+        condition: service_started # Inicia quando o serviço mongo começar
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/dados"] # Testa uma rota da API
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - barco-network
+
 
   # --- Frontend (React) ---
   frontend:
@@ -33,6 +41,13 @@ services:
     container_name: barco-frontend
     restart: always
     networks:
+      - barco-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002"] # Testa se o servidor web está respondendo
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
       - barco-network
 
   # --- Proxy Reverso (Nginx) ---
@@ -46,9 +61,11 @@ services:
       # Monta o arquivo de configuração dentro do diretório de configurações do Nginx
       - ./nginx/nginx.conf:/etc/nginx/conf.d/barco.conf
       - ./certs:/etc/nginx/certs # <-- Use caminho relativo
-    depends_on:
-      - frontend
-      - backend
+    depends_on: # O Nginx depende do frontend e backend estarem SAUDÁVEIS
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     networks:
       - barco-network
 
